@@ -25,6 +25,7 @@ const propTypes = {
   onKeyDown: PropTypes.func,
   onPaste: PropTypes.func,
   onChange: PropTypes.func,
+  onUpdate: PropTypes.func,
   styled: PropTypes.bool, // If element is a styled component (uses innerRef instead of ref)
 };
 
@@ -124,8 +125,8 @@ class ContentEditable extends Component {
   }
 
   _onChange = ev => {
-    const { sanitise } = this.props;
-    const rawValue = this._element.innerText;
+    const { sanitise, onUpdate } = this.props;
+    const rawValue = onUpdate ? onUpdate(this._element.innerText) : this._element.innerText;
     const value = sanitise ? this.sanitiseValue(rawValue) : rawValue;
 
     if (this.state.value !== value) {
@@ -146,8 +147,8 @@ class ContentEditable extends Component {
   };
 
   _onBlur = ev => {
-    const { sanitise } = this.props;
-    const rawValue = this._element.innerText;
+    const { sanitise, onUpdate } = this.props;
+    const rawValue = onUpdate ? onUpdate(this._element.innerText) : this._element.innerText;
     const value = sanitise ? this.sanitiseValue(rawValue) : rawValue;
 
     // We finally set the state to the sanitised version (rather than the `rawValue`) because we're blurring the field.
