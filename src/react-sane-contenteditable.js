@@ -126,11 +126,11 @@ class ContentEditable extends Component {
 
   _onChange = ev => {
     const { sanitise, onUpdate } = this.props;
-    const rawValue = onUpdate ? onUpdate(this._element.innerText) : this._element.innerText;
+    const rawValue = this._element.innerText;
     const value = sanitise ? this.sanitiseValue(rawValue) : rawValue;
 
     if (this.state.value !== value) {
-      this.setState({ value: rawValue }, () => {
+      this.setState({ value: onUpdate ? onUpdate(value) : rawValue }, () => {
         this.props.onChange(ev, value);
       });
     }
@@ -148,11 +148,11 @@ class ContentEditable extends Component {
 
   _onBlur = ev => {
     const { sanitise, onUpdate } = this.props;
-    const rawValue = onUpdate ? onUpdate(this._element.innerText) : this._element.innerText;
+    const rawValue = this._element.innerText;
     const value = sanitise ? this.sanitiseValue(rawValue) : rawValue;
 
     // We finally set the state to the sanitised version (rather than the `rawValue`) because we're blurring the field.
-    this.setState({ value }, () => {
+    this.setState({ value: onUpdate ? onUpdate(value) : value }, () => {
       this.props.onChange(ev, value);
       this.forceUpdate();
     });
