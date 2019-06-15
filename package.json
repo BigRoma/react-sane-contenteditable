@@ -17,6 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.1.2",
+    "caret-pos": "^1.2.1",
     "prop-types": "^15.6.2"
   },
   "devDependencies": {

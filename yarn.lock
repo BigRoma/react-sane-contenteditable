@@ -1627,6 +1627,11 @@ capture-exit@^1.2.0:
   dependencies:
     rsvp "^3.3.3"
 
+caret-pos@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/caret-pos/-/caret-pos-1.2.1.tgz#45abe8da94314cbc3103033c23f0d7d0c2b9c4d2"
+  integrity sha512-hBPxTSBjyL9Ovd56Kg2km2xUvL9Cv7uWYikcP3wOa+pFZRxOpL65pXhoT+he9U6prUk0Phn7KWc7G0MDXc3ksA==
+
 caseless@~0.12.0:
   version "0.12.0"
   resolved "https://registry.yarnpkg.com/caseless/-/caseless-0.12.0.tgz#1b681c21ff84033c826543090689420d187151dc"

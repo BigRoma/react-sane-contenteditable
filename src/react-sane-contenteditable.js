@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { position, offset } from 'caret-pos';
 
 const reduceTargetKeys = (target, keys, predicate) => Object.keys(target).reduce(predicate, {});
 
 const omit = (target = {}, keys = []) =>
-  reduceTargetKeys(target, keys, (acc, key) => keys.some(omitKey => omitKey === key) ? acc : { ...acc, [key]: target[key] });
+    reduceTargetKeys(target, keys, (acc, key) => keys.some(omitKey => omitKey === key) ? acc : { ...acc, [key]: target[key] });
 
 const pick = (target = {}, keys = []) =>
-  reduceTargetKeys(target, keys, (acc, key) => keys.some(pickKey => pickKey === key) ? { ...acc, [key]: target[key] } : acc);
+    reduceTargetKeys(target, keys, (acc, key) => keys.some(pickKey => pickKey === key) ? { ...acc, [key]: target[key] } : acc);
 
 const isEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -26,6 +27,9 @@ const propTypes = {
   onPaste: PropTypes.func,
   onChange: PropTypes.func,
   onUpdate: PropTypes.func,
+  returnHtml: PropTypes.bool,
+  htmlToText: PropTypes.func,
+  fastUpdate: PropTypes.bool,
   styled: PropTypes.bool, // If element is a styled component (uses innerRef instead of ref)
 };
 
@@ -116,22 +120,34 @@ class ContentEditable extends Component {
     }
 
     return value
-      .split('\n')
-      .map(line => line.trim())
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n') // replace 3+ line breaks with two
-      .trim()
-      .substr(0, maxLength);
+        .split('\n')
+        .map(line => line.trim())
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n') // replace 3+ line breaks with two
+        .trim()
+        .substr(0, maxLength);
   }
 
+  _getRawValue = () => {
+    const { returnHtml, htmlToText } = this.props;
+    const rawValue = returnHtml ? this._element.innerHTML : this._element.innerText;
+    return htmlToText ? htmlToText(rawValue) : rawValue;
+  };
+
   _onChange = ev => {
-    const { sanitise, onUpdate } = this.props;
-    const rawValue = this._element.innerText;
-    const value = sanitise ? this.sanitiseValue(rawValue) : rawValue;
+    const { sanitise, onUpdate, fastUpdate } = this.props;
+    const rawValue = this._getRawValue();
+    const sanitisedValue = sanitise ? this.sanitiseValue(rawValue) : rawValue;
+    const value = onUpdate ? onUpdate(sanitisedValue) : sanitisedValue;
 
     if (this.state.value !== value) {
-      this.setState({ value: onUpdate ? onUpdate(value) : rawValue }, () => {
-        this.props.onChange(ev, value);
+      if (fastUpdate) {
+        const { pos } = position(this._element);
+        this._element.innerHTML = onUpdate ? value : rawValue;
+        position(this._element, pos)
+      }
+      this.setState({ value }, () => {
+        this.props.onChange(ev, rawValue);
       });
     }
   };
@@ -148,12 +164,13 @@ class ContentEditable extends Component {
 
   _onBlur = ev => {
     const { sanitise, onUpdate } = this.props;
-    const rawValue = this._element.innerText;
-    const value = sanitise ? this.sanitiseValue(rawValue) : rawValue;
+    const rawValue = this._getRawValue();
+    const sanitisedValue = sanitise ? this.sanitiseValue(rawValue) : rawValue;
+    const value = onUpdate ? onUpdate(sanitisedValue) : sanitisedValue;
 
     // We finally set the state to the sanitised version (rather than the `rawValue`) because we're blurring the field.
-    this.setState({ value: onUpdate ? onUpdate(value) : value }, () => {
-      this.props.onChange(ev, value);
+    this.setState({ value }, () => {
+      this.props.onChange(ev, sanitisedValue);
       this.forceUpdate();
     });
 
@@ -192,31 +209,31 @@ class ContentEditable extends Component {
     const { tagName: Element, content, editable, styled, ...props } = this.props;
 
     return (
-      <Element
-        {...omit(props, Object.keys(propTypes))}
-        {...(styled
-          ? {
-              innerRef: c => {
-                this._element = c;
-                props.innerRef(c);
-              },
-            }
-          : {
-              ref: c => {
-                this._element = c;
-                props.innerRef(c);
-              },
-            })}
-        style={{ whiteSpace: 'pre-wrap', ...props.style }}
-        contentEditable={editable}
-        key={Date()}
-        dangerouslySetInnerHTML={{ __html: this.state.value }}
-        onBlur={this._onBlur}
-        onInput={this._onChange}
-        onKeyDown={this._onKeyDown}
-        onKeyUp={this._onKeyUp}
-        onPaste={this._onPaste}
-      />
+        <Element
+            {...omit(props, Object.keys(propTypes))}
+            {...(styled
+                ? {
+                  innerRef: c => {
+                    this._element = c;
+                    props.innerRef(c);
+                  },
+                }
+                : {
+                  ref: c => {
+                    this._element = c;
+                    props.innerRef(c);
+                  },
+                })}
+            style={{ whiteSpace: 'pre-wrap', ...props.style }}
+            contentEditable={editable}
+            key={Date()}
+            dangerouslySetInnerHTML={{ __html: this.state.value }}
+            onBlur={this._onBlur}
+            onInput={this._onChange}
+            onKeyDown={this._onKeyDown}
+            onKeyUp={this._onKeyUp}
+            onPaste={this._onPaste}
+        />
     );
   }
 }
